@@ -1,5 +1,6 @@
 /*
 DSI   19.09.18  JH  Neue Artikel hinzugefügt (CRQ18000308)
+DSI   05.10.18  JH  Korrektur an der Aufbereitung der Daten, damit Artikel mit Nullbestand angezeigt werden (CRQ18000308)
 */
 
 USE [dsinav_140330]
@@ -211,14 +212,13 @@ SELECT N'Lagerbestand' [Type]
 	 , YEAR(GETDATE()) [Year]
 	 , MONTH(GETDATE()) [Month]
      , SUM([Quantity]) [Quantity]
-FROM dbo.[DSI-Getraenkearmaturen$Item Ledger Entry] WITH (READUNCOMMITTED)
-LEFT OUTER JOIN #Baugruppen
+FROM #Baugruppen WITH (READUNCOMMITTED)
+LEFT OUTER JOIN dbo.[DSI-Getraenkearmaturen$Item Ledger Entry] 
 ON [Item No_] = #Baugruppen.[Baugruppe] OR
    [Item No_] = #Baugruppen.[Baugruppe2]
 GROUP BY [Item No_],
          [Main Item],
-         [Location Code]
-HAVING SUM([Quantity])<>0)
+         [Location Code])
 
 --Lagerbestandszeilen einfuegen
 INSERT INTO #ResultLines
@@ -227,9 +227,9 @@ SELECT 'Lagerbestand' [Type]
 	 , '' [Kreditornr]
 	 , YEAR(GETDATE()) [Year]
 	 , MONTH(GETDATE()) [Month]
-     , SUM([Quantity]) [Quantity]
+     , SUM(COALESCE([Quantity],0)) [Quantity]
 FROM #Baugruppen
-INNER JOIN Inventory
+LEFT OUTER JOIN Inventory
 ON [#Baugruppen].[Main Item] = Inventory.[Item No_]
 WHERE [Location Code] IN (SELECT [nstr] FROM dbo.[Charlist_to_table](#Baugruppen.Lagerortfilter,','))
 GROUP BY [Item No_],
@@ -465,14 +465,14 @@ SELECT [MainLine].[EK Artikelnr]
 	 , [MainLine].[Type] [Art]
      , LeadTime.[Description] [Beschreibung]
 	 , LeadTime.[Item Category Code] [Artikelkategoriencode]
-	 , LeadTime.[Safety Stock Quantity] [AlterSicherheitsbestand]
-	 , [Avg_ Consumption 12M] [DurchschnVerbrauch12M]
+	 , COALESCE(LeadTime.[Safety Stock Quantity],0) [AlterSicherheitsbestand]
+	 , COALESCE([Avg_ Consumption 12M],0) [DurchschnVerbrauch12M]
 	 , [LeadTime].[WBZ]
  	 , [LeadTime].[WBZinTagen]	 	 
 	 ,CASE 
-	    WHEN LeadTime.[Item Category Code] = '010' AND [Avg_ Consumption 12M] > 1000 THEN [Avg_ Consumption 12M]
-		WHEN LeadTime.[Item Category Code] IN ('011','012','013','020','021','022','190','211') AND [LeadTime].[WBZinTagen] <= 90 THEN [Avg_ Consumption 12M]
-		WHEN LeadTime.[Item Category Code] IN ('011','012','013','020','021','022','190','211') AND [LeadTime].[WBZinTagen] > 90 THEN 2 * [Avg_ Consumption 12M]
+	    WHEN LeadTime.[Item Category Code] = '010' AND [Avg_ Consumption 12M] > 1000 THEN COALESCE([Avg_ Consumption 12M],0)
+		WHEN LeadTime.[Item Category Code] IN ('011','012','013','020','021','022','190','211') AND [LeadTime].[WBZinTagen] <= 90 THEN COALESCE([Avg_ Consumption 12M],0)
+		WHEN LeadTime.[Item Category Code] IN ('011','012','013','020','021','022','190','211') AND [LeadTime].[WBZinTagen] > 90 THEN 2 * COALESCE([Avg_ Consumption 12M],0)
 		ELSE 0
       END [NeuerSicherheitsbestand]
      , COALESCE(BlanketLines.Menge, 0) [MengeInRahmen]
@@ -481,7 +481,7 @@ SELECT [MainLine].[EK Artikelnr]
 FROM #ResultLines [MainLine]
 INNER JOIN LeadTime
 ON [MainLine].[EK Artikelnr] = LeadTime.[No_]
-INNER JOIN AvgConsumption
+LEFT OUTER JOIN AvgConsumption
 ON AvgConsumption.[Item No_] = [MainLine].[EK Artikelnr]
 LEFT OUTER JOIN dbo.[DSI-Getraenkearmaturen$Vendor] Kreditor
 ON [MainLine].[Kreditornr] = Kreditor.[No_]
