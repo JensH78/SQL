@@ -1,6 +1,7 @@
 /*
 DSI   19.09.18  JH  Neue Artikel hinzugefügt (CRQ18000308)
 DSI   05.10.18  JH  Korrektur an der Aufbereitung der Daten, damit Artikel mit Nullbestand angezeigt werden (CRQ18000308)
+DSI   30.10.18  JH  Korrektur bei einem Join für Lagerbestand (CRQ18000405)
 */
 
 USE [dsinav_140330]
@@ -215,7 +216,8 @@ SELECT N'Lagerbestand' [Type]
 FROM #Baugruppen WITH (READUNCOMMITTED)
 LEFT OUTER JOIN dbo.[DSI-Getraenkearmaturen$Item Ledger Entry] 
 ON [Item No_] = #Baugruppen.[Baugruppe] OR
-   [Item No_] = #Baugruppen.[Baugruppe2]
+   [Item No_] = #Baugruppen.[Baugruppe2] OR
+   [Item No_] = #Baugruppen.[Main Item]
 GROUP BY [Item No_],
          [Main Item],
          [Location Code])
