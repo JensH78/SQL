@@ -1,10 +1,13 @@
+/*
+Ermittelt Objektunterschiede zwischen Test- und Live-Datenbank
+*/
 WITH cte AS(
 SELECT CASE WHEN [Test].[Name] <> Live.[Name] THEN 'Name unterschiedlich'
             WHEN [Test].[Date] > [Live].[Date] THEN 'Test aktueller'
             WHEN [Test].[Date] < [Live].[Date] THEN 'Live aktueller'
             WHEN [Test].[Time] <> [Live].[Time] THEN 'Zeit unterschiedlich'
 			WHEN [Test].[Version List] <> [Live].[Version List] THEN 'Version unterschiedlich'
-			WHEN [Test].[BLOB Size] <> [Live].[BLOB Size] THEN 'Größe unterschiedlich'
+			WHEN [Test].[BLOB Size] <> [Live].[BLOB Size] THEN 'GrÃ¶ÃŸe unterschiedlich'
 			WHEN [Test].[ID] IS NULL THEN 'Objekt in Test nicht vorhanden'
 			WHEN [Live].[ID] IS NULL THEN 'Objekt in Live nicht vorhanden'
        END [Unterschied]
@@ -50,7 +53,6 @@ WHERE ((((
 
 SELECT *
 FROM cte
---WHERE Unterschied IN ('Test aktueller')
 ORDER BY [Unterschied],
          [Type],
          [ID]
