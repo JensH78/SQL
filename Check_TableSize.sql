@@ -1,4 +1,6 @@
-
+/*
+Ermittelt die Anzahl der Datensätze für einen Mandanten
+*/
 
 DECLARE @stmt AS VARCHAR(MAX)
       , @CuTableName AS VARCHAR(MAX)
@@ -13,7 +15,6 @@ CREATE TABLE #TableAnalyse
     TableName CHAR(2000),
 	Quantity INT     
 );
-
 
 OPEN TableCursor FETCH NEXT FROM TableCursor INTO @CuTableName
 WHILE @@FETCH_STATUS = 0 BEGIN
